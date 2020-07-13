@@ -847,7 +847,7 @@
 //#define MICROSTEP16 LOW,LOW,HIGH
 //#define MICROSTEP32 HIGH,LOW,HIGH
 
-// Microstep setting (Only functional when stepper driver microstep pins are connected to MCU.
+// Microstep settings (Requires a board with pins named X_MS1, X_MS2, etc.)
 #define MICROSTEP_MODES { 16, 16, 16, 16, 16, 16 } // [1,2,4,8,16]
 
 /**
@@ -1065,8 +1065,8 @@
   #if ENABLED(SDCARD_SORT_ALPHA)
     #define SDSORT_LIMIT       40     // Maximum number of sorted items (10-256). Costs 27 bytes each.
     #define FOLDER_SORTING     -1     // -1=above  0=none  1=below
-    #define SDSORT_GCODE       false  // Allow turning sorting on/off with LCD and M34 g-code.
-    #define SDSORT_USES_RAM    true  // Pre-allocate a static array for faster pre-sorting.
+    #define SDSORT_GCODE       false  // Allow turning sorting on/off with LCD and M34 G-code.
+    #define SDSORT_USES_RAM    false  // Pre-allocate a static array for faster pre-sorting.
     #define SDSORT_USES_STACK  false  // Prefer the stack for pre-sorting to give back some SRAM. (Negated by next 2 options.)
     #define SDSORT_CACHE_NAMES true  // Keep sorted items in RAM longer for speedy performance. Most expensive option.
     #define SDSORT_DYNAMIC_RAM false  // Use dynamic allocation (within SD menus). Least expensive option. Set SDSORT_LIMIT before use!
@@ -2216,7 +2216,7 @@
    * like overtemperature and short to ground.
    * In the case of overtemperature Marlin can decrease the driver current until error condition clears.
    * Other detected conditions can be used to stop the current print.
-   * Relevant g-codes:
+   * Relevant G-codes:
    * M906 - Set or get motor current in milliamps using axis codes X, Y, Z, E. Report values if no axis codes given.
    * M911 - Report stepper driver overtemperature pre-warn condition.
    * M912 - Clear stepper driver overtemperature pre-warn condition flag.
@@ -2499,7 +2499,7 @@
    * Monitor L6470 drivers for error conditions like over temperature and over current.
    * In the case of over temperature Marlin can decrease the drive until the error condition clears.
    * Other detected conditions can be used to stop the current print.
-   * Relevant g-codes:
+   * Relevant G-codes:
    * M906 - I1/2/3/4/5  Set or get motor drive level using axis codes X, Y, Z, E. Report values if no axis codes given.
    *         I not present or I0 or I1 - X, Y, Z or E0
    *         I2 - X2, Y2, Z2 or E1
@@ -2699,6 +2699,24 @@
 
   // Display filament width on the LCD status line. Status messages will expire after 5 seconds.
   //#define FILAMENT_LCD_DISPLAY
+#endif
+
+/**
+ * Power Monitor
+ * Monitor voltage (V) and/or current (A), and -when possible- power (W)
+ *
+ * Read and configure with M430
+ *
+ * The current sensor feeds DC voltage (relative to the measured current) to an analog pin
+ * The voltage sensor feeds DC voltage (relative to the measured voltage) to an analog pin
+ */
+//#define POWER_MONITOR_CURRENT   // Monitor the system current
+//#define POWER_MONITOR_VOLTAGE   // Monitor the system voltage
+#if EITHER(POWER_MONITOR_CURRENT, POWER_MONITOR_VOLTAGE)
+  #define POWER_MONITOR_VOLTS_PER_AMP   0.05000   // Input voltage to the MCU analog pin per amp  - DO NOT apply more than ADC_VREF!
+  #define POWER_MONITOR_CURRENT_OFFSET -1         // Offset value for current sensors with linear function output
+  #define POWER_MONITOR_VOLTS_PER_VOLT  0.11786   // Input voltage to the MCU analog pin per volt - DO NOT apply more than ADC_VREF!
+  #define POWER_MONITOR_FIXED_VOLTAGE   13.6      // Voltage for a current sensor with no voltage sensor (for power display)
 #endif
 
 /**
@@ -3057,6 +3075,45 @@
       {  10.0,  700 }, \
       { -10.0,  400 }, \
       { -50.0, 2000 }
+  #endif
+
+  /**
+   * MMU Extruder Sensor
+   *
+   * Support for a Prusa (or other) IR Sensor to detect filament near the extruder
+   * and make loading more reliable. Suitable for an extruder equipped with a filament
+   * sensor less than 38mm from the gears.
+   *
+   * During loading the extruder will stop when the sensor is triggered, then do a last
+   * move up to the gears. If no filament is detected, the MMU2 can make some more attempts.
+   * If all attempts fail, a filament runout will be triggered.
+   */
+  //#define MMU_EXTRUDER_SENSOR
+  #if ENABLED(MMU_EXTRUDER_SENSOR)
+    #define MMU_LOADING_ATTEMPTS_NR 5 //max. number of attempts to load filament if first load fail
+  #endif
+
+  /**
+   * Using a sensor like the MMU2S
+   * This mode requires a MK3S extruder with a sensor at the extruder idler, like the MMU2S.
+   * See https://help.prusa3d.com/en/guide/3b-mk3s-mk2-5s-extruder-upgrade_41560, step 11
+   */
+  //#define PRUSA_MMU2_S_MODE
+  #if ENABLED(PRUSA_MMU2_S_MODE)
+    #define MMU2_C0_RETRY   5             // Number of retries (total time = timeout*retries)
+
+    #define MMU2_CAN_LOAD_FEEDRATE 800    // (mm/m)
+    #define MMU2_CAN_LOAD_SEQUENCE \
+      {  0.1, MMU2_CAN_LOAD_FEEDRATE }, \
+      {  60.0, MMU2_CAN_LOAD_FEEDRATE }, \
+      { -52.0, MMU2_CAN_LOAD_FEEDRATE }
+
+    #define MMU2_CAN_LOAD_RETRACT   6.0   // (mm) Keep under the distance between Load Sequence values
+    #define MMU2_CAN_LOAD_DEVIATION 0.8   // (mm) Acceptable deviation
+
+    #define MMU2_CAN_LOAD_INCREMENT 0.2   // (mm) To reuse within MMU2 module
+    #define MMU2_CAN_LOAD_INCREMENT_SEQUENCE \
+      { -MMU2_CAN_LOAD_INCREMENT, MMU2_CAN_LOAD_FEEDRATE }
 
   #endif
 
