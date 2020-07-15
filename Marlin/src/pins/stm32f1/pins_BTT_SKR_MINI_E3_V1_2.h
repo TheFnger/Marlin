@@ -31,6 +31,12 @@
  * TMC2208/TMC2209 stepper drivers
  */
 #if HAS_TMC_UART
+
+  // filament runout pin
+  #ifndef FIL_RUNOUT_PIN
+    #define FIL_RUNOUT_PIN                   PC14
+  #endif
+
   //
   // Software serial
   //
